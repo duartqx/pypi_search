@@ -9,7 +9,7 @@ from re import findall, IGNORECASE
 from requests import get
 import sys
 
-def help():
+def pypi_help():
     print('''
     Usage:  pypi_search STRING
             pypi_search [OPTION]
@@ -23,10 +23,10 @@ if __name__ == '__main__':
     # Exits if no argument was used
     if len(sys.argv) < 2:
         print('\nEmpty search string.\n')
-        help()
+        pypi_help()
         sys.exit(1)
     elif sys.argv[1] == '--help':
-        help()
+        pypi_help()
         sys.exit()
 
     URL = 'https://pypi.org/search/?q=' + sys.argv[1]
