@@ -37,5 +37,6 @@ if __name__ == '__main__':
     descriptions = findall('<p class="package-snippet__description">*(.*)</p>',RESULTS.text,IGNORECASE)
     
     for i in range(5):
-        print(names[i],versions[i])
+        # Using ANSI escape characters the names are printed in bright green instead of white
+        print(f'\033[1;32m{names[i]}\033[00m',versions[i])
         print('\t',descriptions[i],'\n')
