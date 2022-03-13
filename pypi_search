@@ -5,41 +5,37 @@ argument to search for modules on pypi websearch
 Depends on BeautifulSoup4
 '''
 
-from bs4 import BeautifulSoup as soup
-import requests, sys
+from re import findall, IGNORECASE
+from requests import get
+import sys
 
-def pypi_search_help():
+def help():
     print('''
-Usage:  pypi_search STRING
-        pypi_search [OPTION]
+    Usage:  pypi_search STRING
+            pypi_search [OPTION]
+    
+    --help                      prints this help
+    ''')
 
---help                      prints this help
-''')
-
-def main():
-    # Exits if no argument was used
-    if len(sys.argv) < 2:
-        print('\nEmpty search string.\n')
-        pypi_search_help()
-        exit()
-    
-    # Makes the request for the html with the search results
-    searchurl = 'https://pypi.org/search/?q=' + sys.argv[1]
-    pypisoup = soup(requests.get(searchurl).content, 'html.parser')
-    pypi_search_results = pypisoup.find_all(class_="package-snippet")
-    
-    # If nothing is found prints and exit
-    if not pypi_search_results: 
-        print('\nNo result found\n')
-    
-    else:
-        print()
-        for result in pypi_search_results[:5]:
-            print(result.find(class_='package-snippet__name').text, end=' ')
-            print(result.find(class_='package-snippet__version').text)
-            print('\t',result.find(class_='package-snippet__description').text,'\n')
 
 if __name__ == '__main__':
 
-    main()
+    # Exits if no argument was used
+    if len(sys.argv) < 2:
+        print('\nEmpty search string.\n')
+        help()
+        sys.exit(1)
+    elif sys.argv[1] == '--help':
+        help()
+        sys.exit()
 
+    URL = 'https://pypi.org/search/?q=' + sys.argv[1]
+    RESULTS = get(URL)
+    
+    names = findall('<span class="package-snippet__name">*(.*)</span>',RESULTS.text,IGNORECASE)
+    versions = findall('<span class="package-snippet__version">*(.*)</span>',RESULTS.text,IGNORECASE)
+    descriptions = findall('<p class="package-snippet__description">*(.*)</p>',RESULTS.text,IGNORECASE)
+    
+    for i in range(5):
+        print(names[i],versions[i])
+        print('\t',descriptions[i],'\n')
