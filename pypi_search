@@ -2,12 +2,46 @@
 '''
 Script to be used on the command line, it uses the first 
 argument to search for modules on pypi websearch
-Depends on BeautifulSoup4
 '''
 
-from re import findall, IGNORECASE
-from requests import get
+from re import findall, finditer, IGNORECASE
+from requests import get, models
+from typing import List
 import sys
+
+class Results:
+
+    def __init__(self, q):
+        self.q = q
+        self.results = self.get_results()
+
+    def __repr__(self) -> str:
+        return ''.join(self.results)
+
+    def get_results(self) -> List[str]:
+        contents = self._get_content()
+        # Scrapes for name, version and description from the html received
+        # from requests.get using re.findall. The ideal would be to use 
+        # re.finditer to lazily grab only the five results
+        names = findall('<span class="package-snippet__name">*' + \
+                '(.*)</span>', contents,IGNORECASE)
+        versions = findall('<span class="package-snippet__version">*' + \
+                '(.*)</span>', contents,IGNORECASE)
+        descr = findall('<p class="package-snippet__description">*' + \
+                '(.*)</p>', contents,IGNORECASE)
+
+        # Returns a list of str, where the module name is colored green by the
+        # ANSI escape sequence in the terminal, with version number and
+        # small description in a new line
+        return [f"\033[1;32m{names[i]}\033[00m {versions[i]}\n    {descr[i]}\n"
+                for i in range(5)]
+
+    def _get_content(self) -> models.Response:
+        # Returns the response from requests.get to be scraped with a findall 
+        # or finditer from the re module
+        return get('https://pypi.org/search/?q=' + self.q).text
+
+
 
 def pypi_help():
     print('''
@@ -17,10 +51,9 @@ def pypi_help():
     --help                      prints this help
     ''')
 
-
 if __name__ == '__main__':
 
-    # Exits if no argument was used
+    # Exits if no argument was passed
     if len(sys.argv) < 2:
         print('\nEmpty search string.\n')
         pypi_help()
@@ -29,14 +62,5 @@ if __name__ == '__main__':
         pypi_help()
         sys.exit()
 
-    URL = 'https://pypi.org/search/?q=' + sys.argv[1]
-    RESULTS = get(URL)
-    
-    names = findall('<span class="package-snippet__name">*(.*)</span>',RESULTS.text,IGNORECASE)
-    versions = findall('<span class="package-snippet__version">*(.*)</span>',RESULTS.text,IGNORECASE)
-    descriptions = findall('<p class="package-snippet__description">*(.*)</p>',RESULTS.text,IGNORECASE)
-    
-    for i in range(5):
-        # Using ANSI escape characters the names are printed in bright green instead of white
-        print(f'\033[1;32m{names[i]}\033[00m',versions[i])
-        print('\t',descriptions[i],'\n')
+    q = sys.argv[1]
+    print(Results(q))

@@ -11,7 +11,8 @@ pip() {
            command pip freeze | grep -v 'jedi\|neovim' ;;
            # skips jedi and neovim from the freeze list
         *) command pip "$@" ;; 
-           # if the first argument is not search, 
-           # executes pip(1) with all arguments used
+           # if the first argument is not search or freeze,
+           # executes pip(1) with all arguments passed
+           # ex: pip install flask
     esac 
 }
