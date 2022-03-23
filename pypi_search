@@ -14,7 +14,10 @@ class Results:
     def __init__(self, q):
         self.q = q
         self.response = self._get_response()
-        self.results = self._get_results()
+        try:
+            self.results = self._get_results()
+        except:
+            self.results = 'Result not found'
 
     def __repr__(self) -> str:
         return ''.join(self.results)
