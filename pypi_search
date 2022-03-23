@@ -4,7 +4,7 @@ Script to be used on the command line, it uses the first
 argument to search for modules on pypi websearch
 '''
 
-from re import findall, finditer, IGNORECASE
+from re import findall, IGNORECASE
 from requests import get, models
 from typing import List
 import sys
