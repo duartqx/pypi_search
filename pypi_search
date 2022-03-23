@@ -13,33 +13,33 @@ class Results:
 
     def __init__(self, q):
         self.q = q
-        self.results = self.get_results()
+        self.response = self._get_response()
+        self.results = self._get_results()
 
     def __repr__(self) -> str:
         return ''.join(self.results)
 
-    def get_results(self) -> List[str]:
-        response = self._get_response()
+    def _get_response(self) -> models.Response:
+        # Returns the response from requests.get to be scraped with a findall 
+        # or finditer from the re module
+        return get('https://pypi.org/search/?q=' + self.q).text
+
+    def _get_results(self) -> List[str]:
         # Scrapes for name, version and description from the html received
         # from requests.get using re.findall. The ideal would be to use 
         # re.finditer to lazily grab only the five results that I want
         names = findall('<span class="package-snippet__name">*' + \
-                '(.*)</span>', response,IGNORECASE)
+                '(.*)</span>', self.response,IGNORECASE)
         versions = findall('<span class="package-snippet__version">*' + \
-                '(.*)</span>', response,IGNORECASE)
+                '(.*)</span>', self.response,IGNORECASE)
         descr = findall('<p class="package-snippet__description">*' + \
-                '(.*)</p>', response,IGNORECASE)
+                '(.*)</p>', self.response,IGNORECASE)
 
         # Returns a list of str, where the module name is colored green by the
         # ANSI escape sequence in the terminal, with version number and
         # small description in a new line
         return [f"\033[1;32m{names[i]}\033[00m {versions[i]}\n    {descr[i]}\n"
                 for i in range(5)]
-
-    def _get_response(self) -> models.Response:
-        # Returns the response from requests.get to be scraped with a findall 
-        # or finditer from the re module
-        return get('https://pypi.org/search/?q=' + self.q).text
 
 
 
