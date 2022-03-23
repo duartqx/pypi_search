@@ -22,7 +22,7 @@ class Results:
         contents = self._get_content()
         # Scrapes for name, version and description from the html received
         # from requests.get using re.findall. The ideal would be to use 
-        # re.finditer to lazily grab only the five results
+        # re.finditer to lazily grab only the five results that I want
         names = findall('<span class="package-snippet__name">*' + \
                 '(.*)</span>', contents,IGNORECASE)
         versions = findall('<span class="package-snippet__version">*' + \
