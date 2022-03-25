@@ -5,7 +5,7 @@ argument to search for modules on pypi websearch
 '''
 
 from re import findall, IGNORECASE
-from urllib3 import PoolManager
+from urllib.request import urlopen
 from typing import List
 import sys
 
@@ -23,15 +23,15 @@ class Results:
         return ''.join(self.results)
 
     def _get_response(self) -> str:
-        # Returns the decoded data from a response got with urllib3.PoolManager
-        # to be scraped with a re.findall or re.finditer
+        # Returns the decoded data from a response got with 
+        # urllib.request.urlopen to be scraped with a re.findall or re.finditer
         URL_BASE = 'https://pypi.org/search/?q='
-        content = PoolManager().request('GET',URL_BASE + self.q).data.decode()
+        content = urlopen(URL_BASE + self.q).read().decode('UTF-8')
         return content
 
     def _get_results(self) -> List[str]:
         # Scrapes for name, version and description from the html received
-        # from requests.get using re.findall. The ideal would be to use 
+        # from _get_response() using re.findall. The ideal would be to use 
         # re.finditer to lazily grab only the five results that I want
         names = findall('<span class="package-snippet__name">*' + \
                 '(.*)</span>', self.response,IGNORECASE)
@@ -48,24 +48,13 @@ class Results:
 
 
 
-def pypi_help():
-    print('''
-    Usage:  pypi_search STRING
-            pypi_search [OPTION]
-    
-    --help                      prints this help
-    ''')
-
 if __name__ == '__main__':
 
     # Exits if no argument was passed
     if len(sys.argv) < 2:
-        print('\nEmpty search string.\n')
-        pypi_help()
+        print('\nEmpty search string.\n' + \
+              'Use pip search <module> or pypi_search <module>')
         sys.exit(1)
-    elif sys.argv[1] == '--help':
-        pypi_help()
-        sys.exit()
 
     q = sys.argv[1]
     print(Results(q))
