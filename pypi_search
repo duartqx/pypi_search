@@ -5,7 +5,7 @@ argument to search for modules on pypi websearch
 '''
 
 from re import findall, IGNORECASE
-from requests import get, models
+from urllib3 import PoolManager
 from typing import List
 import sys
 
@@ -22,10 +22,12 @@ class Results:
     def __repr__(self) -> str:
         return ''.join(self.results)
 
-    def _get_response(self) -> models.Response:
-        # Returns the response from requests.get to be scraped with a findall 
-        # or finditer from the re module
-        return get('https://pypi.org/search/?q=' + self.q).text
+    def _get_response(self) -> str:
+        # Returns the decoded data from a response got with urllib3.PoolManager
+        # to be scraped with a re.findall or re.finditer
+        URL_BASE = 'https://pypi.org/search/?q='
+        content = PoolManager().request('GET',URL_BASE + self.q).data.decode()
+        return content
 
     def _get_results(self) -> List[str]:
         # Scrapes for name, version and description from the html received
