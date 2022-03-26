@@ -4,19 +4,19 @@ Script to be used on the command line, it uses the first
 argument to search for modules on pypi websearch
 '''
 
-from re import finditer, search
+from re import finditer
 from urllib.request import urlopen
-from typing import Generator as Gen, Iterator
+from typing import Generator as Gen, Iterator as Iter
 from sys import argv, exit as _exit
 
 class Results:
 
     def __init__(self, q):
         self.q: str = q
-        self.response: str = self.get_response()
+        self.response: Gen = self.get_response()
         self.results: str = self.get_results()
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         return self.results
 
     def get_response(self) -> str:
@@ -27,7 +27,7 @@ class Results:
         response: str = urlopen(url_base + self.q).read().decode('UTF-8')
         return response
 
-    def next_it(self, iterable: Iterator) -> str:
+    def next_it(self, iterable: Iter) -> str:
         ''' Since re.finditer returns a callable_iterator it's required to loop
         through it or call next() to get the result. Calling just .group()
         returns the full string with html tags included, and .group(1) is just
@@ -41,17 +41,17 @@ class Results:
         finditer could have better performance because it grabs the next result
         lazily '''
 
-        na: Iterator = finditer('__name">*(.*)</span>', self.response)
-        ve: Iterator = finditer('__version">*(.*)</span>', self.response)
-        de: Iterator = finditer('__description">*(.*)</p>', self.response)
+        na: Iter = finditer('__name">*(.*)</span>', self.response)
+        ve: Iter = finditer('__version">*(.*)</span>', self.response)
+        de: Iter = finditer('__description">*(.*)</p>', self.response)
 
         # The ANSI escape sequence makes the module name in the results show up
         # green instead of the default white in the terminal, followed by
         # version number and small description in a new line
         try:
-            res: Gen[str] = (f"\n\033[1;32m{self.next_it(na)}\033[00m " + \
-                             f"{self.next_it(ve)}\n{self.next_it(de)}\n"
-                             for _ in range(5))
+            res: Gen[str] =  (f"\n\033[1;32m{self.next_it(na)}\033[00m " + \
+                              f"{self.next_it(ve)}\n {self.next_it(de)}\n" 
+                            for _ in range(5))
             return ''.join(res)
         except RuntimeError:
             # Raises RuntimeError if the generator expression res raises a
