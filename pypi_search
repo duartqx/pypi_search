@@ -54,8 +54,8 @@ class Results:
                             for _ in range(5))
             return ''.join(res)
         except RuntimeError:
-            # Raises RuntimeError if the generator expression res raises a
-            # StopIteration
+            # RuntimeError is raised if the generator expression res raises a
+            # StopIteration, that means finditer have not found results
             return '\nResult not found\n'
 
 
