@@ -4,9 +4,9 @@ Script to be used on the command line, it uses the first
 argument to search for modules on pypi websearch
 '''
 
-from re import findall, IGNORECASE
+from re import finditer, search
 from urllib.request import urlopen
-from typing import List, Generator as Gen
+from typing import Generator as Gen, Iterator
 from sys import argv, exit as _exit
 
 class Results:
@@ -20,33 +20,42 @@ class Results:
         return self.results
 
     def get_response(self) -> str:
-        # Returns the decoded data from a response got with 
-        # urllib.request.urlopen to be scraped with a re.findall or re.finditer
-        URL_BASE: str = 'https://pypi.org/search/?q='
-        response: str = urlopen(URL_BASE + self.q).read().decode('UTF-8')
+        ''' Returns the decoded data from a response got with
+        urllib.request.urlopen to be scraped with a re.findall or re.finditer
+        '''
+        url_base: str = 'https://pypi.org/search/?q='
+        response: str = urlopen(url_base + self.q).read().decode('UTF-8')
         return response
+
+    def next_it(self, iterable: Iterator) -> str:
+        ''' Since re.finditer returns a callable_iterator it's required to loop
+        through it or call next() to get the result. Calling just .group()
+        returns the full string with html tags included, and .group(1) is just
+        the right part without tags '''
+        return next(iterable).group(1)
 
     def get_results(self) -> str:
         ''' Scrapes for name, version and description from the html received
-        from _get_response() using re.findall. The ideal would be to use 
-        re.finditer to lazily grab only the five results that I want '''
+        with get_response() using re.finditer. Also worked with findall, but
+        since it caches all results and I want to show only the first 5
+        finditer could have better performance because it grabs the next result
+        lazily '''
 
-        n_pattern = '<span class="package-snippet__name">*(.*)</span>'
-        v_pattern = '<span class="package-snippet__version">*(.*)</span>'
-        d_pattern = '<p class="package-snippet__description">*(.*)</p>'
+        na: Iterator = finditer('__name">*(.*)</span>', self.response)
+        ve: Iterator = finditer('__version">*(.*)</span>', self.response)
+        de: Iterator = finditer('__description">*(.*)</p>', self.response)
 
-        na: List[str] = findall(n_pattern, self.response) # List of Names
-        ve: List[str] = findall(v_pattern, self.response) # List of Versions
-        de: List[str] = findall(d_pattern, self.response) # List of Descrip.
-
+        # The ANSI escape sequence makes the module name in the results show up
+        # green instead of the default white in the terminal, followed by
+        # version number and small description in a new line
         try:
-            # Returns a str, where the module name is colored green by the
-            # ANSI escape sequence in the terminal, with version number and
-            # small description in a new line
-            res: Gen[str] = (f"\n\033[1;32m{na[i]}\033[00m {ve[i]}\n{de[i]}\n"
-                             for i in range(5))
+            res: Gen[str] = (f"\n\033[1;32m{self.next_it(na)}\033[00m " + \
+                             f"{self.next_it(ve)}\n{self.next_it(de)}\n"
+                             for _ in range(5))
             return ''.join(res)
-        except IndexError:
+        except RuntimeError:
+            # Raises RuntimeError if the generator expression res raises a
+            # StopIteration
             return '\nResult not found\n'
 
 
