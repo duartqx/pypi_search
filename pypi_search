@@ -51,7 +51,7 @@ class Results:
         try:
             res: Gen[str] =  (f"\n\033[1;32m{self.next_it(na)}\033[00m " + \
                               f"{self.next_it(ve)}\n {self.next_it(de)}\n" 
-                            for _ in range(5))
+                              for _ in range(5))
             return ''.join(res)
         except RuntimeError:
             # RuntimeError is raised if the generator expression res raises a
