@@ -44,12 +44,12 @@ class Results:
         # just the right part inside the tag
         nxt: Callable[[Iterable], str] = lambda i: next(i).group(1)
 
-        # The ANSI escape sequence makes the module name in the results show 
-        # up green instead of the default white in the terminal, followed by
-        # version number and small description in a new line
         try:
             res: Generator[str] = ("\n\033[1;32m{}\033[00m {}\n{}\n".format(
                                   nxt(na), nxt(ve), nxt(de)) for _ in range(5))
+            # The ANSI escape sequence ('\033[1;32m' + nxt(na) + '\033[00m')
+            # makes the module name in the results show up green instead of the
+            # default white in the terminal
             return ''.join(res)
         except RuntimeError:
             # RuntimeError is raised if the generator expression res raises a
