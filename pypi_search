@@ -6,7 +6,7 @@ argument to search for modules on pypi websearch
 
 from re import finditer
 from urllib.request import urlopen
-from typing import Generator as Gen, Iterator as Iter
+from typing import Callable, Generator, Iterable
 from sys import argv, exit as _exit
 
 class Results:
@@ -27,13 +27,6 @@ class Results:
         response: str = urlopen(url_base + self.q).read().decode('UTF-8')
         return response
 
-    def next_it(self, iterable: Iter) -> str:
-        ''' Since re.finditer returns a callable_iterator it's required to loop
-        through it or call next() to get the result. Calling just .group()
-        returns the full string with html tags included, and .group(1) is just
-        the right part without tags '''
-        return next(iterable).group(1)
-
     def get_results(self) -> str:
         ''' Scrapes for name, version and description from the html received
         with get_response() using re.finditer. Also worked with findall, but
@@ -41,23 +34,27 @@ class Results:
         finditer could have better performance because it grabs the next result
         lazily '''
 
-        na: Iter = finditer('__name">*(.*)</span>', self.response)
-        ve: Iter = finditer('__version">*(.*)</span>', self.response)
-        de: Iter = finditer('__description">*(.*)</p>', self.response)
+        na: Iterable = finditer('__name">*(.*)</span>', self.response)
+        ve: Iterable = finditer('__version">*(.*)</span>', self.response)
+        de: Iterable = finditer('__description">*(.*)</p>', self.response)
 
-        # The ANSI escape sequence makes the module name in the results show up
-        # green instead of the default white in the terminal, followed by
+        # Since re.finditer returns a callable_iterator it's required to loop
+        # through it or call next() to get the string. Calling just group()
+        # returns the full string with html tags included, and .group(1) is
+        # just the right part inside the tag
+        nxt: Callable[[Iterable], str] = lambda i: next(i).group(1)
+
+        # The ANSI escape sequence makes the module name in the results show 
+        # up green instead of the default white in the terminal, followed by
         # version number and small description in a new line
         try:
-            res: Gen[str] =  (f"\n\033[1;32m{self.next_it(na)}\033[00m " + \
-                              f"{self.next_it(ve)}\n {self.next_it(de)}\n" 
-                              for _ in range(5))
+            res: Generator[str] = ("\n\033[1;32m{}\033[00m {}\n{}\n".format(
+                                  nxt(na), nxt(ve), nxt(de)) for _ in range(5))
             return ''.join(res)
         except RuntimeError:
             # RuntimeError is raised if the generator expression res raises a
             # StopIteration, that means finditer have not found results
             return '\nResult not found\n'
-
 
 
 if __name__ == '__main__':
