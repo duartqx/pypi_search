@@ -13,7 +13,7 @@ class Results:
 
     def __init__(self, q):
         self.q: str = q
-        self.response: Gen = self.get_response()
+        self.response: str = self.get_response()
         self.results: str = self.get_results()
 
     def __repr__(self):
