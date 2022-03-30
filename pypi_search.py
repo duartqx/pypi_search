@@ -34,19 +34,19 @@ class Results:
         finditer could have better performance because it grabs the next result
         lazily '''
 
-        na: Iterable = finditer('__name">*(.*)</span>', self.response)
-        ve: Iterable = finditer('__version">*(.*)</span>', self.response)
-        de: Iterable = finditer('__description">*(.*)</p>', self.response)
+        na: Iterable[str] = finditer('__name">*(.*)</span>', self.response)
+        ve: Iterable[str] = finditer('__version">*(.*)</span>', self.response)
+        de: Iterable[str] = finditer('__description">*(.*)</p>', self.response)
 
         # Since re.finditer returns a callable_iterator it's required to loop
         # through it or call next() to get the string. Calling just group()
         # returns the full string with html tags included, and .group(1) is
         # just the right part inside the tag
-        nxt: Callable[[Iterable], str] = lambda i: next(i).group(1)
+        nxtg: Callable[[Iterable], str] = lambda i: next(i).group(1)
 
         try:
             res: Generator[str] = ("\n\033[1;32m{}\033[00m {}\n{}\n".format(
-                                  nxt(na), nxt(ve), nxt(de)) for _ in range(5))
+                               nxtg(na), nxtg(ve), nxtg(de)) for _ in range(5))
             # The ANSI escape sequence ('\033[1;32m' + nxt(na) + '\033[00m')
             # makes the module name in the results show up green instead of the
             # default white in the terminal
