@@ -6,7 +6,7 @@ argument to search for modules on pypi websearch
 
 from re import finditer
 from urllib.request import urlopen
-from typing import Callable, Generator, Iterable
+from typing import Callable, Iterator, Match
 from sys import argv, exit as _exit
 
 class Results:
@@ -34,18 +34,18 @@ class Results:
         finditer could have better performance because it grabs the next result
         lazily '''
 
-        na: Iterable[str] = finditer('__name">*(.*)</span>', self.response)
-        ve: Iterable[str] = finditer('__version">*(.*)</span>', self.response)
-        de: Iterable[str] = finditer('__description">*(.*)</p>', self.response)
+        na: Iterator[Match[str]] = finditer('__name">*(.*)</span>', self.response)
+        ve: Iterator[Match[str]] = finditer('__version">*(.*)</span>', self.response)
+        de: Iterator[Match[str]] = finditer('__description">*(.*)</p>', self.response)
 
         # Since re.finditer returns a callable_iterator it's required to loop
         # through it or call next() to get the string. Calling just group()
         # returns the full string with html tags included, and .group(1) is
         # just the right part inside the tag
-        nxtg: Callable[[Iterable], str] = lambda i: next(i).group(1)
+        nxtg: Callable[[Iterator], str] = lambda i: next(i).group(1)
 
         try:
-            res: Generator[str] = ("\n\033[1;32m{}\033[00m {}\n{}\n".format(
+            res: Iterator[str] = ("\n\033[1;32m{}\033[00m {}\n{}\n".format(
                                nxtg(na), nxtg(ve), nxtg(de)) for _ in range(5))
             # The ANSI escape sequence ('\033[1;32m' + nxt(na) + '\033[00m')
             # makes the module name in the results show up green instead of the
