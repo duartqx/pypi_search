@@ -7,16 +7,39 @@ argument to search for modules on pypi websearch
 from re import findall
 from urllib.request import urlopen
 from sys import argv, exit as sysexit
+from pkg_resources import working_set
 
 class Results:
 
     def __init__(self, q: str) -> None:
         self.q: str = q
         self.response: str = self.get_response()
-        self.results: str = self.get_results()
+        self.results: dict[str[str]] = self.get_results()
+        self.range: int = min(len(self.results['vers']),5)
 
     def __repr__(self) -> str:
-        return self.results
+
+        if self.results['vers']:
+
+            inst_pkgs = [pkg.key for pkg in working_set]
+            installed = ['[installed]' if self.results['names'][i].lower() 
+                        in inst_pkgs else '' for i in range(self.range)] 
+
+            return ''.join("\n\033[1;32m{}\033[00m {} {}\n{}\n".format(
+                           self.results['names'][i], 
+                           self.results['vers'][i], 
+                           installed[i], self.results['descr'][i]) \
+                           for i in range(self.range))
+            # The ANSI escape sequence ('\033[1;32m' + nxt(na) + '\033[00m')
+            # makes the module name in the results show up green instead of the
+            # default white in the terminal
+        else:
+            # if self.results['vers'] is empty, that means no result was found.
+            # self.results['vers'] is checked instead of self.results['names']
+            # because the latter has a lot of junk from random links from
+            # pypi.org site while self.results['vers'] only contains version
+            # numbers found in the search
+            return '\nResult not found\n'
 
     def get_response(self) -> str:
         ''' Returns the decoded data from a response got with
@@ -44,26 +67,7 @@ class Results:
         versions: list[str] = findall('__version">*(.*)</span>', rsp)
         descriptions: list[str] = findall('__description">*(.*)</p>', rsp)
 
-        # Since re.finditer returns a callable_iterator it's required to loop
-        # through it or call next() to get the string. That was a problem when
-        # the results were less than the range that I was using to loop
-        # through, resulting in the exception handling to return 'Result not
-        # found'
-
-        if versions:
-            return ''.join("\n\033[1;32m{}\033[00m {}\n{}\n".format(
-                            names[i], versions[i], descriptions[i]) \
-                            for i in range(min(len(versions),5)))
-            # The ANSI escape sequence ('\033[1;32m' + nxt(na) + '\033[00m')
-            # makes the module name in the results show up green instead of the
-            # default white in the terminal
-        else:
-            # if ve is empty, that means no result was found. ve is checked
-            # instead of na because na has a lot of junk from random links from
-            # pypi.org site while ve only contains version numbers found in the
-            # search
-            return '\nResult not found\n'
-
+        return {'names':names, 'vers':versions, 'descr':descriptions}
 
 
 if __name__ == '__main__':
