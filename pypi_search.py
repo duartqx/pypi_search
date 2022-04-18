@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 '''
 Script to be used on the command line, it uses the first 
-argument to search for modules on pypi websearch
+argument to search for modules on pypi.org's websearch
 '''
 
 from re import findall
