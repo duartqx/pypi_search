@@ -11,7 +11,7 @@ from pkg_resources import working_set
 
 class ResultNotFound(Exception): pass
 
-class Results:
+class PypiSearch:
 
     def __init__(self, q: str) -> None:
         self.q: str = q
@@ -51,19 +51,15 @@ class Results:
         '''
         url_base: str = 'https://pypi.org/search/?q='
 
-        response: str = ''
-
         try:
-            response = urlopen(url_base + self.q).read().decode('UTF-8')
+            response: str = urlopen(url_base + self.q).read().decode('UTF-8')
+            return response
         except UnicodeEncodeError:
             raise ResultNotFound
-        return response
 
     def get_results(self) -> dict[str, list[str]]:
         ''' Scrapes for name, version and description from the html received
         with get_response() using re.findall. '''
-        if not self.response:
-            raise ResultNotFound
 
         rsp: str = self.response
 
@@ -76,7 +72,7 @@ class Results:
 
 if __name__ == '__main__':
 
-    q = argv[1]
+    q: str = argv[1]
 
     if not q:
         # If a search string is not passed python q is an empty string, so a
@@ -86,6 +82,6 @@ if __name__ == '__main__':
               'Use pip search <module> or pypi_search <module>\n')
         sysexit(1)
     try:
-        print(Results(q))
+        print(PypiSearch(q))
     except ResultNotFound:
         print('\nResult not found\n')
