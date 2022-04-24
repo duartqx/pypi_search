@@ -9,7 +9,7 @@ from urllib.request import urlopen
 from sys import argv, exit as sysexit
 from pkg_resources import working_set
 
-class ResultNotFound(Exception): pass
+class ResultNotFoundError(Exception): pass
 
 class PypiSearch:
 
@@ -22,28 +22,25 @@ class PypiSearch:
     def __repr__(self) -> str:
 
         if self.results['vers']:
-
-            inst_pkgs: list[str] = [pkg.key for pkg in working_set]
-            installed: list[str] = ['[installed]'
-                                    if self.results['names'][i].lower() 
-                                    in inst_pkgs else ''
-                                    for i in range(self.range)] 
-
-            return ''.join("\n\033[1;32m{}\033[00m {} {}\n{}\n".format(
-                           self.results['names'][i], 
+            # Get the installed list here so that I don't have to check for
+            # self.results['vers'] inside the self._is_installed method.
+            self.results['inst'] = self._is_installed()
+            return ''.join("\n\033[1;32m%s\033[00m %s %s\n%s\n" %
+                          (self.results['names'][i], 
                            self.results['vers'][i], 
-                           installed[i], self.results['descr'][i]) \
+                           self.results['inst'][i], 
+                           self.results['desc'][i])
                            for i in range(self.range))
-            # The ANSI escape sequence ('\033[1;32m' + nxt(na) + '\033[00m')
-            # makes the module name in the results show up green instead of the
-            # default white in the terminal
+            # The ANSI escape sequence ('\033[1;32m' and '\033[00m') makes the
+            # module name in the results show up green instead of the default
+            # white in the terminal
         else:
             # if self.results['vers'] is empty, that means no result was found.
             # self.results['vers'] is checked instead of self.results['names']
             # because the latter has a lot of junk from random links from
             # pypi.org site while self.results['vers'] only contains version
             # numbers found in the search
-            raise ResultNotFound
+            raise ResultNotFoundError
 
     def get_response(self) -> str:
         ''' Returns the decoded data from a response got with
@@ -55,7 +52,7 @@ class PypiSearch:
             response: str = urlopen(url_base + self.q).read().decode('UTF-8')
             return response
         except UnicodeEncodeError:
-            raise ResultNotFound
+            raise ResultNotFoundError
 
     def get_results(self) -> dict[str, list[str]]:
         ''' Scrapes for name, version and description from the html received
@@ -67,7 +64,15 @@ class PypiSearch:
         versions: list[str] = findall('__version">*(.*)</span>', rsp)
         descriptions: list[str] = findall('__description">*(.*)</p>', rsp)
 
-        return {'names':names, 'vers':versions, 'descr':descriptions}
+        return {'names': names, 'vers': versions, 'desc': descriptions}
+
+    def _is_installed(self) -> list[str]:                                                                 
+        ''' Checks if modules on self.results are already installed or not '''
+
+        inst_pkgs: list[str] = [pkg.key for pkg in working_set]
+        inst: list[str] = ['[installed]' if self.results['names'][i].lower() 
+                            in inst_pkgs else '' for i in range(self.range)]
+        return inst
 
 
 if __name__ == '__main__':
@@ -83,5 +88,5 @@ if __name__ == '__main__':
         sysexit(1)
     try:
         print(PypiSearch(q))
-    except ResultNotFound:
+    except ResultNotFoundError:
         print('\nResult not found\n')
