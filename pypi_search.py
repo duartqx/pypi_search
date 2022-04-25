@@ -4,16 +4,16 @@ Script to be used on the command line, it uses the first
 argument to search for modules on pypi.org's websearch
 '''
 
-from re import findall
-from urllib.request import urlopen
-from sys import argv, exit as sysexit
 from pkg_resources import working_set
+from re import findall
+from sys import argv, exit as sysexit
+from urllib.request import urlopen
 
 class ResultNotFoundError(Exception): pass
 
 class PypiSearch:
 
-    def __init__(self, q: str) -> None:
+    def __init__(self, q) -> None:
         self.q: str = q
         self.response: str = self.get_response()
         self.results: dict[str, list[str]] = self.get_results()
@@ -90,3 +90,4 @@ if __name__ == '__main__':
         print(PypiSearch(q))
     except ResultNotFoundError:
         print('\nResult not found\n')
+        sysexit(1)
