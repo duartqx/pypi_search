@@ -6,10 +6,13 @@ argument to search for modules on pypi.org's websearch
 
 from pkg_resources import working_set
 from re import findall
-from sys import argv, exit as sysexit
 from urllib.request import urlopen
 
+import sys
+
+
 class ResultNotFoundError(Exception): pass
+
 
 class PypiSearch:
 
@@ -30,7 +33,7 @@ class PypiSearch:
                            self.results['vers'][i], 
                            self.results['inst'][i], 
                            self.results['desc'][i])
-                           for i in range(self.range))
+                           for i in range(self.range)) + '\n'
             # The ANSI escape sequence ('\033[1;32m' and '\033[00m') makes the
             # module name in the results show up green instead of the default
             # white in the terminal
@@ -75,19 +78,24 @@ class PypiSearch:
         return inst
 
 
+def main() -> None:
+
+    try:
+        q: str = sys.argv[1]
+        sys.stdout.write(PypiSearch(q).__repr__())
+        sys.stdout.flush()
+    except IndexError:
+        sys.stderr.write('\nEmpty search string.\n' + \
+              'Use pip search <module> or pypi_search <module>\n\n')
+        sys.stderr.flush()
+        sys.exit(1)
+    except ResultNotFoundError:
+        sys.stderr.write('\nResult not found\n\n')
+        sys.stderr.flush()
+        sys.exit(1)
+
+
 if __name__ == '__main__':
 
-    q: str = argv[1]
+    main()
 
-    if not q:
-        # If a search string is not passed python q is an empty string, so a
-        # little help is printed and the script exits with a return code of 1,
-        # so that bash can know that an error ocurred
-        print('\nEmpty search string.\n' + \
-              'Use pip search <module> or pypi_search <module>\n')
-        sysexit(1)
-    try:
-        print(PypiSearch(q))
-    except ResultNotFoundError:
-        print('\nResult not found\n')
-        sysexit(1)
