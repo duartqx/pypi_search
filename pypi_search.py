@@ -81,7 +81,9 @@ class PypiSearch:
 
         inst_pkgs: list[str] = [pkg.key for pkg in working_set]
         inst: list[str] = [
-            "[installed]" if self.results["names"][i].lower() in inst_pkgs else ""
+            "[installed]"
+            if self.results["names"][i].lower() in inst_pkgs
+            else ""
             for i in range(self.range)
         ]
         return inst
