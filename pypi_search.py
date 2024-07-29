@@ -59,17 +59,15 @@ class PypiSearch:
             # Get the installed list here so that I don't have to check for
             # self.results['vers'] inside the self._is_installed method.
             self.results["inst"] = self._is_installed()
-            return (
-                "".join(
-                    "\n\033[1;32m%s\033[00m %s %s\n%s\n"
-                    % (
-                        self.results["names"][i],
-                        self.results["vers"][i],
-                        self.results["inst"][i],
-                        self.results["desc"][i],
-                    )
-                    for i in range(self.range)
+            return "".join(
+                "\n\033[1;32m%s\033[00m %s %s\n%s\n"
+                % (
+                    self.results["names"][i],
+                    self.results["vers"][i],
+                    self.results["inst"][i],
+                    self.results["desc"][i],
                 )
+                for i in range(self.range)
             )
             # The ANSI escape sequence ('\033[1;32m' and '\033[00m') makes the
             # module name in the results show up green instead of the default
@@ -107,10 +105,16 @@ class PypiSearch:
     def _is_installed(self) -> list[str]:
         """Checks if modules on self.results are already installed or not"""
 
-        inst_pkgs: list[str] = [p.name for p in metadata.distributions()]
+        inst_pkgs: list[str] = [
+            p.name.lower() for p in metadata.distributions()
+        ]
 
         inst: list[str] = [
-            "[installed]" if self.results["names"][i].lower() in inst_pkgs else ""
+            (
+                "[installed]"
+                if self.results["names"][i].lower() in inst_pkgs
+                else ""
+            )
             for i in range(self.range)
         ]
         return inst
