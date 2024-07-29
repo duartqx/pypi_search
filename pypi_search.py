@@ -4,10 +4,11 @@ Script to be used on the command line, it uses the first
 argument to search for modules on pypi.org's websearch
 """
 
-from pkg_resources import working_set
+from importlib import metadata
 from re import findall
-from urllib.request import urlopen
+from typing import Literal, Optional, Self
 
+import http.client
 import sys
 
 
@@ -15,12 +16,42 @@ class ResultNotFoundError(Exception):
     pass
 
 
+class HttpsRequest:
+    def __init__(self, host: str) -> None:
+        self.host: str = host
+        self.method: Literal["GET", "POST"] = "GET"
+        self.path: Optional[str] = None
+        self.conn: Optional[http.client.HTTPSConnection] = None
+
+    def get(self, path: str) -> Self:
+        self.path = path
+        self.method = "GET"
+        return self
+
+    def read(self) -> bytes:
+        if self.conn is None:
+            raise Exception("You should first start a context block")
+        elif self.path is None:
+            raise Exception("You should first set a path")
+
+        self.conn.request(self.method, self.path)
+        return self.conn.getresponse().read()
+
+    def __enter__(self) -> Self:
+        self.conn = http.client.HTTPSConnection(self.host)
+        return self
+
+    def __exit__(self, exc_type, exc_val, traceback) -> None:
+        if self.conn is not None:
+            self.conn.close()
+
+
 class PypiSearch:
-    def __init__(self, q) -> None:
+    def __init__(self, q: str, max_results: int = 5) -> None:
         self.q: str = q
         self.response: str = self.get_response()
         self.results: dict[str, list[str]] = self.get_results()
-        self.range: int = min(len(self.results["vers"]), 5)
+        self.range: int = min(len(self.results["vers"]), max_results)
 
     def __repr__(self) -> str:
 
@@ -39,7 +70,6 @@ class PypiSearch:
                     )
                     for i in range(self.range)
                 )
-                + "\n"
             )
             # The ANSI escape sequence ('\033[1;32m' and '\033[00m') makes the
             # module name in the results show up green instead of the default
@@ -56,11 +86,9 @@ class PypiSearch:
         """Returns the decoded data from a response got with
         urllib.request.urlopen to be scraped with a re.findall or re.finditer
         """
-        url_base: str = "https://pypi.org/search/?q="
-
         try:
-            response: str = urlopen(url_base + self.q).read().decode("UTF-8")
-            return response
+            with HttpsRequest("pypi.org").get(f"search/?q={self.q}") as req:
+                return req.read().decode()
         except UnicodeEncodeError:
             raise ResultNotFoundError
 
@@ -79,35 +107,36 @@ class PypiSearch:
     def _is_installed(self) -> list[str]:
         """Checks if modules on self.results are already installed or not"""
 
-        inst_pkgs: list[str] = [pkg.key for pkg in working_set]
+        inst_pkgs: list[str] = [p.name for p in metadata.distributions()]
+
         inst: list[str] = [
-            "[installed]"
-            if self.results["names"][i].lower() in inst_pkgs
-            else ""
+            "[installed]" if self.results["names"][i].lower() in inst_pkgs else ""
             for i in range(self.range)
         ]
         return inst
 
 
 def main() -> None:
+    from argparse import ArgumentParser
+
+    parser = ArgumentParser(prog="PypiSearch")
+    parser.add_argument("query", help="The package name to search on Pypi.org")
+    parser.add_argument(
+        "-m",
+        "--max_results",
+        type=int,
+        help="The max number of results to show",
+        default=5,
+    )
+
+    args = parser.parse_args()
 
     try:
-        q: str = sys.argv[1]
-        sys.stdout.write(PypiSearch(q).__repr__())
-        sys.stdout.flush()
-    except IndexError:
-        sys.stderr.write(
-            "\nEmpty search string.\n"
-            + "Use pip search <module> or pypi_search <module>\n\n"
-        )
-        sys.stderr.flush()
-        sys.exit(1)
+        print(PypiSearch(args.query, args.max_results), flush=True)
     except ResultNotFoundError:
-        sys.stderr.write("\nResult not found\n\n")
-        sys.stderr.flush()
+        print("\nResult not found\n", file=sys.stderr, flush=True)
         sys.exit(1)
 
 
 if __name__ == "__main__":
-
     main()
